@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Do Not Press The Big Red Button</title>
+<link href="https://fonts.googleapis.com/css?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  body, html {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(160deg, #191924 0%, #340019 45%, #0d0b1b 100%);
+    color: #0ff;
+    user-select: none;
+  }
+  #starfield {
+    position: fixed; top:0; left:0; width:100%; height:100%; z-index: -1;
+    background: radial-gradient(ellipse at 70% 30%, #26293c 0%, #0a0a16 90%);
+    pointer-events: none;
+  }
+  #dramaticVignette {
+    pointer-events: none;
+    position: fixed;
+    z-index: 1;
+    width: 100vw;
+    height: 100vh;
+    top: 0; left: 0;
+    background:
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 65%, rgba(0,0,0,0.75) 100%),
+      repeating-linear-gradient(
+        120deg,
+        rgba(255,255,255,0.04) 0px,
+        rgba(255,255,255,0.06) 1px,
+        rgba(0,0,0,0.01) 3px,
+        rgba(0,0,0,0.02) 12px
+      );
+    pointer-events: none;
+  }
+  #loginScreen {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: linear-gradient(146deg, rgba(0,8,26,0.98) 0%, rgba(16,1,21,0.93) 100%);
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+    z-index: 10;
+    box-shadow: 0 0 80px 0 #1a002a inset;
+    animation: loginFadeIn 1s;
+  }
+  @keyframes loginFadeIn {
+    from { opacity: 0; filter: blur(6px);}
+    to { opacity: 1; filter: blur(0);}
+  }
+  #loginScreen h2 {
+    font-size: 2.3em;
+    color: #fff;
+    letter-spacing: 2px;
+    text-shadow:
+      0 0 22px #0ff8,
+      0 0 4px #fff,
+      0 2px 10px #0ff2;
+    margin-bottom: 20px;
+    font-family: 'Orbitron', 'Segoe UI', sans-serif;
+    font-weight: 800;
+  }
+  #loginScreen input {
+    margin: 5px; padding: 10px; font-size: 1.1em;
+    border-radius: 5px; border: none; outline: none;
+    background: rgba(10,20,40,0.8);
+    color: #fff;
+    box-shadow: 0 2px 14px #0ff3 inset;
+    width: 220px;
+    transition: box-shadow 0.2s;
+  }
+  #loginScreen input:focus {
+    box-shadow: 0 2px 22px #fff8, 0 0 8px #0ffb inset;
+    background: rgba(20,30,60,0.92);
+  }
+  #loginScreen button {
+    margin-top: 13px;
+    padding: 10px 25px;
+    font-size: 1.15em;
+    background: linear-gradient(90deg, #0dcfff 25%, #006666 100%);
+    border: none; border-radius: 4px; cursor: pointer;
+    color: #fff; font-weight: bold;
+    text-shadow: 0 0 8px #0ff, 0 0 2px #000;
+    box-shadow: 0 1px 20px #0ff4 inset, 0 0 5px #003;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  }
+  #loginScreen button:hover {
+    background: linear-gradient(92deg, #4afcff 30%, #00b3b3 100%);
+    box-shadow: 0 3px 32px #0ff8, 0 0 3px #fff;
+    transform: scale(1.06);
+  }
+  #loginMessage {
+    margin-top: 16px; color: #f33;
+    text-shadow: 0 0 8px #000, 0 0 4px #f00a;
+    font-size: 1.1em;
+  }
+  #gameScreen {
+    display: none;
+    position: relative;
+    height: 100vh; width: 100vw;
+    overflow: hidden;
+    background:
+      linear-gradient(140deg, rgba(41,0,25,0.43) 0%, rgba(12,8,38,0.8) 100%),
+      radial-gradient(ellipse at 75% 10%, #360016 0%, #000015 80%);
+    box-shadow: 0 0 120px 0 #0ff2 inset, 0 0 80px 0 #0007;
+    animation: gameFade 2s;
+  }
+  @keyframes gameFade {
+    from { opacity: 0; filter: blur(7px);}
+    to { opacity: 1; filter: blur(0);}
+  }
+  #progressDisplay {
+    position: fixed;
+    top: 16px; left: 16px;
+    background: linear-gradient(130deg, rgba(0,40,60,0.90) 70%, rgba(0,0,0,0.4) 100%);
+    padding: 16px 20px 13px 20px;
+    border-radius: 10px;
+    min-width: 210px;
+    font-size: 15px;
+    box-shadow: 0 0 16px #0ff3, 0 2px 20px #0007;
+    border: 1.5px solid #14f8f8a8;
+    user-select: none;
+    z-index: 3;
+    backdrop-filter: blur(2.8px);
+  }
+  #progressDisplay div {
+    margin: 7px 0;
+  }
+  #xpBarContainer {
+    width: 100%;
+    background: #002c36;
+    border-radius: 4px;
+    height: 18px;
+    overflow: hidden;
+    border: 1px solid #0ff8;
+    margin-top: 3px;
+  }
+  #xpBar {
+    height: 18px;
+    background: linear-gradient(90deg, #00ffff 0%, #0055ff 100%);
+    width: 0%;
+    box-shadow: 0 0 12px #0ffb;
+    transition: width 0.25s cubic-bezier(.24,.85,.44,1.11);
+  }
+  #disastersCount {
+    font-weight: bold;
+    font-size: 20px;
+    margin-top: 7px;
+    color: #fff;
+    text-shadow: 0 0 12px #0ffb, 0 0 4px #fff;
+  }
+  #bigRedButtonContainer {
+    position: absolute;
+    top: 54%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 4;
+    filter: drop-shadow(0 0 90px #ff0030cc);
+  }
+  /* Remove warning text, now handled as popup */
+  #dontPressText {
+    display: none !important;
+  }
+  #bigRedButton {
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 55% 38%, #ff3636 38%, #d80808 75%, #670000 100%);
+    border: 9px solid #cc0000;
+    box-shadow:
+      0 0 80px #ff0000e0,
+      0 0 170px #ff0030d0,
+      0 0 80px #99000070 inset;
+    cursor: pointer;
+    transition: box-shadow 0.18s, transform 0.14s;
+    font-size: 2.1em;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 0 0 18px #900, 0 0 4px #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    outline: none;
+    filter: drop-shadow(0 0 30px #ff2222b0);
+    animation: pulseRedBtn 2.2s infinite alternate;
+  }
+  @keyframes pulseRedBtn {
+    from { box-shadow: 0 0 80px #ff0000e0, 0 0 170px #ff0030c0, 0 0 80px #99000070 inset; }
+    to   { box-shadow: 0 0 120px #ff3333f0, 0 0 220px #f70, 0 0 110px #ff6600aa inset;}
+  }
+  #bigRedButton:hover {
+    box-shadow: 0 0 140px #ff3333f0, 0 0 220px #ff6666d7, 0 0 120px #c00 inset;
+    background: radial-gradient(circle at 40% 55%, #ff5a5a 55%, #cc0000 100%);
+    transform: scale(1.07);
+    filter: drop-shadow(0 0 70px #ff3333c0);
+  }
+  #bigRedButton:active {
+    transform: scale(0.97);
+    box-shadow: 0 0 90px #f99, 0 0 120px #800 inset;
+    filter: drop-shadow(0 0 40px #ff9999c0);
+  }
+  #menusContainer {
+    position: fixed;
+    top: 20px; right: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 11px;
+    max-height: 96vh;
+    overflow-y: auto;
+    user-select: none;
+    z-index: 6;
+  }
+  .sideButton {
+    background: linear-gradient(90deg, #004444 75%, #002222 100%);
+    color: #0ff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 7px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 1.07em;
+    box-shadow: 0 0 18px #0ff2;
+    outline: none;
+    filter: drop-shadow(0 0 8px #00ffff80);
+    transition: background 0.16s, filter 0.18s;
+  }
+  .sideButton:hover {
+    background: linear-gradient(95deg, #00cfd2 70%, #008080 100%);
+    color: #fff;
+    filter: drop-shadow(0 0 16px #0ffcc0);
+  }
+  #settingsIcon {
+    font-size: 28px;
+    cursor: pointer;
+    background: #004444;
+    padding: 8px 13px;
+    border-radius: 7px;
+    user-select: none;
+    box-shadow: 0 0 14px #0ff3;
+    color: #fff;
+    transition: background 0.16s, box-shadow 0.18s;
+  }
+  #settingsIcon:hover {
+    background: #007a7a;
+    box-shadow: 0 0 22px #0ff9;
+    color: #0ff;
+  }
+  .menuPanel {
+    background: linear-gradient(122deg, rgba(0,40,60,0.97) 60%, rgba(0,0,0,0.7) 100%);
+    padding: 16px;
+    width: 290px;
+    max-height: 360px;
+    overflow-y: auto;
+    border-radius: 11px;
+    color: #0ff;
+    font-size: 15px;
+    display: none;
+    box-shadow: 0 0 18px #0ff2, 0 0 7px #0038;
+    border: 1.5px solid #14f8f8a8;
+    backdrop-filter: blur(2.8px);
+  }
+  .menuPanel.active {
+    display: block;
+    animation: panelFadeIn 0.7s;
+  }
+  @keyframes panelFadeIn {
+    from { opacity: 0; filter: blur(5px);}
+    to { opacity: 1; filter: blur(0);}
+  }
+  ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  li {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  button.buy-btn, button.upgrade-btn, button.challenge-claim-btn {
+    background: linear-gradient(90deg, #008080 85%, #004444 100%);
+    border: none;
+    color: #0ff;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 14px;
+    margin-top: 5px;
+    transition: background 0.15s, color 0.15s;
+    box-shadow: 0 0 7px #0ff4;
+  }
+  button.buy-btn:disabled,
+  button.upgrade-btn:disabled,
+  button.challenge-claim-btn:disabled {
+    background: #003333;
+    cursor: not-allowed;
+    color: #033;
+    box-shadow: none;
+  }
+  li.locked {
+    opacity: 0.5;
+  }
+  li.locked::after {
+    content: ' (Locked)';
+    color: #066;
+    font-style: italic;
+    font-size: 12px;
+  }
+  button.challenge-claim-btn {
+    background: linear-gradient(90deg, #004400 85%, #002200 100%);
+    color: #6f6;
+    font-weight: bold;
+  }
+  .menuPanel::-webkit-scrollbar {
+    width: 8px;
+  }
+  .menuPanel::-webkit-scrollbar-thumb {
+    background-color: #00cccc;
+    border-radius: 6px;
+  }
+  #settingsMenu {
+    position: fixed;
+    top: 60px;
+    right: 22px;
+    background: rgba(0,0,0,0.95);
+    border: 1.5px solid #0ff;
+    border-radius: 7px;
+    padding: 13px 13px 8px 13px;
+    width: 170px;
+    z-index: 1000;
+    box-shadow: 0 0 28px #0ff7;
+    animation: settingsMenuFade 0.3s;
+  }
+  @keyframes settingsMenuFade {
+    from { opacity: 0; filter: blur(6px);}
+    to { opacity: 1; filter: blur(0);}
+  }
+  #settingsMenu button {
+    width: 100%;
+    margin-bottom: 13px;
+    background: linear-gradient(90deg, #004444 70%, #00cccc 100%);
+    color: #0ff;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 6px #0ff2;
+    font-size: 1.05em;
+    transition: background 0.14s;
+  }
+  #settingsMenu button:hover {
+    background: linear-gradient(90deg, #00cccc 75%, #004444 100%);
+    color: #fff;
+  }
+  #popupOverlay {
+    position: fixed;
+    top:0;
+    left:0;
+    width:100vw;
+    height:100vh;
+    background:rgba(0,0,0,0.62);
+    z-index: 10000;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    animation: fadein 0.3s;
+  }
+  #popupBox {
+    background: linear-gradient(140deg, #133, #0ff1 120%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 32px 34px;
+    box-shadow: 0 0 48px #0ff7;
+    min-width: 300px;
+    max-width: 90vw;
+    text-align: center;
+    z-index: 10001;
+  }
+  #popupBox strong {
+    color: #0ff;
+    font-size: 1.25em;
+  }
+  #popupBox button {
+    margin: 18px 8px 0 8px;
+    padding: 10px 24px;
+    font-size: 1.08em;
+    background: linear-gradient(90deg, #0dcfff 25%, #006666 100%);
+    border: none;
+    border-radius: 7px;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 1px 10px #0ff4 inset, 0 0 2px #003;
+    transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+  }
+  #popupBox button:hover {
+    background: linear-gradient(92deg, #4afcff 30%, #00b3b3 100%);
+    box-shadow: 0 3px 22px #0ff8, 0 0 2px #fff;
+    transform: scale(1.05);
+  }
+  /* Fade popup for warning */
+  #transientPopup {
+    position: fixed;
+    left: 50%;
+    top: 20%;
+    transform: translate(-50%, 0);
+    background: rgba(60,0,0,0.95);
+    color: #ff2222;
+    border-radius: 20px;
+    font-family: 'Orbitron', 'Segoe UI', sans-serif;
+    font-size: 2em;
+    font-weight: bold;
+    padding: 36px 56px;
+    box-shadow: 0 0 60px #ff0030cc, 0 0 18px #fff8;
+    text-shadow: 0 0 17px #000, 0 0 12px #ff1d45, 0 0 2px #fff;
+    z-index: 100000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 1.1s cubic-bezier(.19,.77,.5,1.12);
+    letter-spacing: 5px;
+    user-select: none;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div id="dramaticVignette"></div>
+
+<div id="loginScreen">
+  <h2>Disaster Clicker</h2>
+  <input type="text" id="usernameInput" placeholder="Username" autocomplete="off" />
+  <input type="password" id="passwordInput" placeholder="Password" autocomplete="off" />
+  <button id="loginBtn">Log In</button>
+  <button id="createAccountBtn">Create Account</button>
+  <div id="loginMessage"></div>
+</div>
+
+<div id="gameScreen">
+
+  <div id="progressDisplay">
+    <div>Level: <span id="levelDisplay">1</span></div>
+    <div>Prestige: <span id="prestigeDisplay">0</span></div>
+    <div>XP: <span id="xpDisplay">0</span> / <span id="xpToLevel">100</span></div>
+    <div id="xpBarContainer"><div id="xpBar"></div></div>
+    <div id="disastersCount">Disasters: 0</div>
+  </div>
+
+  <div id="bigRedButtonContainer">
+    <div id="dontPressText"></div>
+    <button id="bigRedButton" title="Seriously, don't!">BIG RED BUTTON</button>
+  </div>
+
+  <div id="menusContainer">
+    <button id="menuToggleBtn" class="sideButton" title="Toggle Menus">☰ Menu</button>
+    <button id="settingsIcon" title="Settings⚙️">⚙️</button>
+
+    <div id="storeMenu" class="menuPanel" aria-label="Store Menu">
+      <h3>Store - Power Ups</h3>
+      <ul id="storeList"></ul>
+    </div>
+
+    <div id="upgradesMenu" class="menuPanel" aria-label="Upgrades Menu">
+      <h3>Upgrades</h3>
+      <ul id="upgradesList"></ul>
+    </div>
+
+    <div id="challengesMenu" class="menuPanel" aria-label="Challenges Menu">
+      <h3>Challenges</h3>
+      <ul id="challengesList"></ul>
+    </div>
+  </div>
+</div>
+
+<div id="popupOverlay">
+  <div id="popupBox"></div>
+</div>
+
+<!-- The transient popup for the warning -->
+<div id="transientPopup">DONT PRESS THE BIG RED BUTTON</div>
+
+<script>
+
+  function showPopup(message, buttons, callback) {
+    const overlay = document.getElementById('popupOverlay');
+    const box = document.getElementById('popupBox');
+    box.innerHTML = `<div>${message}</div>
+      <div style="margin-top:16px;">
+        ${buttons.map((b,i) =>
+          `<button class="${b.className||''}" data-value="${b.value}">${b.label}</button>`
+        ).join('')}
+      </div>`;
+    overlay.style.display = 'flex';
+    function close(val) {
+      overlay.style.display = 'none';
+      box.innerHTML = '';
+      Array.from(box.querySelectorAll('button')).forEach(btn => {
+        btn.removeEventListener('click', onBtn);
+      });
+      if(callback) callback(val);
+    }
+    function onBtn(e) {
+      const val = e.target.getAttribute('data-value');
+      close(val);
+    }
+    Array.from(box.querySelectorAll('button')).forEach(btn => {
+      btn.addEventListener('click', onBtn);
+    });
+    overlay.onclick = function(e) {
+      if(e.target === overlay) close(null);
+    };
+  }
+
+  function showTransientPopup(msg, ms=2600) {
+    const el = document.getElementById('transientPopup');
+    el.innerText = msg;
+    el.style.opacity = 0;
+    el.style.display = 'block';
+    void el.offsetWidth;
+    el.style.opacity = 1;
+    setTimeout(() => {
+      el.style.opacity = 0;
+      setTimeout(() => { el.style.display = 'none'; }, 1100);
+    }, ms);
+  }
+
+  const loginScreen = document.getElementById('loginScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const usernameInput = document.getElementById('usernameInput');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginBtn = document.getElementById('loginBtn');
+  const createAccountBtn = document.getElementById('createAccountBtn');
+  const loginMessage = document.getElementById('loginMessage');
+
+  const bigRedButton = document.getElementById('bigRedButton');
+  const disastersCountEl = document.getElementById('disastersCount');
+  const levelDisplay = document.getElementById('levelDisplay');
+  const prestigeDisplay = document.getElementById('prestigeDisplay');
+  const xpDisplay = document.getElementById('xpDisplay');
+  const xpToLevelDisplay = document.getElementById('xpToLevel');
+  const xpBar = document.getElementById('xpBar');
+
+  const menuToggleBtn = document.getElementById('menuToggleBtn');
+  const storeMenu = document.getElementById('storeMenu');
+  const upgradesMenu = document.getElementById('upgradesMenu');
+  const challengesMenu = document.getElementById('challengesMenu');
+  const storeList = document.getElementById('storeList');
+  const upgradesList = document.getElementById('upgradesList');
+  const challengesList = document.getElementById('challengesList');
+
+  const settingsIcon = document.getElementById('settingsIcon');
+
+  let showMenus = false;
+  let showSettings = false;
+
+  let users = JSON.parse(localStorage.getItem('disasterClickerUsers') || '{}');
+  let currentUser = null;
+
+  const storePowerUps = [
+    { id: 'doubleClick', name: 'Double Disaster', baseCost: 500, cost: 500, cpsBonus: 0, clickBonus: 2, owned: 0, desc: 'Double disasters per click.' },
+    { id: 'autoCalamity', name: 'Faulty Nuclear Plant', baseCost: 2500, cost: 2500, cpsBonus: 0.2, clickBonus: 0, owned: 0, desc: 'Automatically triggers disasters.' },
+    { id: 'megaDisaster', name: 'Mega Disaster', baseCost: 5000, cost: 5000, cpsBonus: 0, clickBonus: 10, owned: 0, desc: 'Each click creates +100 disasters.' },
+    { id: 'disasterFactory', name: 'Make a Religion', baseCost: 15000, cost: 15000, cpsBonus: 25, clickBonus: 0, owned: 0, desc: 'Produces disasters passively.' }
+  ];
+
+  const upgradesListData = [
+    { id: 'clickBoost', name: 'Disaster Boost', cost: 300, desc: 'Increase disasters per click by 50%.' , owned: false},
+    { id: 'cpsBoost', name: 'Disaster Rate Boost', cost: 1500, desc: 'Increase disasters per second by 50%.' , owned: false},
+    { id: 'prestigeBoost', name: 'Prestige Boost', cost: 50000, desc: 'Unlocks prestige system.' , owned: false},
+  ];
+
+  let challengeData = [
+    { id: 'challenge1', name: 'Press the big red button 15,000 times', requirement: 15000, progress: 0, completed: false, claimed: false, reward: 5000 },
+    { id: 'challenge2', name: 'Cause 10000 disasters', requirement: 10000, progress: 0, completed: false, claimed: false, reward: 15000 },
+    { id: 'challenge3', name: 'Reach level 5', requirement: 5, progress: 0, completed: false, claimed: false, reward: 20000 },
+  ];
+
+  function createNewPlayer(username, password) {
+    return {
+      username,
+      password,
+      disasters: 0,
+      disastersPerClick: 1,
+      disastersPerSecond: 0,
+      level: 1,
+      xp: 0,
+      xpToLevel: 1000,
+      prestige: 0,
+      storePowerUps: JSON.parse(JSON.stringify(storePowerUps)),
+      upgrades: upgradesListData.map(u => ({...u})),
+      challenges: challengeData.map(c => ({...c})),
+      clicksMade: 0,
+      disastersEarnedTotal: 0,
+    };
+  }
+
+  function saveUsers() {
+    localStorage.setItem('disasterClickerUsers', JSON.stringify(users));
+  }
+
+  function saveCurrentUser() {
+    if(currentUser) {
+      users[currentUser.username] = currentUser;
+      saveUsers();
+    }
+  }
+
+  function loadCurrentUserData(username) {
+    if(users[username]) {
+      currentUser = users[username];
+    } else {
+      currentUser = createNewPlayer(username, "");
+      users[username] = currentUser;
+      saveUsers();
+      currentUser.challenges.forEach(ch => {
+        if (typeof ch.claimed === "undefined") ch.claimed = false;
+      });
+    }
+  }
+
+  function updateProgressDisplay() {
+    levelDisplay.textContent = currentUser.level;
+    prestigeDisplay.textContent = `Prestige ${currentUser.prestige}`;
+    xpDisplay.textContent = Math.floor(currentUser.xp);
+    xpToLevelDisplay.textContent = currentUser.xpToLevel;
+    disastersCountEl.textContent = 'Disasters: ' + Math.floor(currentUser.disasters);
+    let percent = Math.min(1, currentUser.xp / currentUser.xpToLevel) * 10000;
+    xpBar.style.width = percent + '%';
+  }
+
+  function updateStoreMenu() {
+    storeList.innerHTML = '';
+    currentUser.storePowerUps.forEach((item) => {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${item.name}</strong> (${item.owned})<br>${item.desc}<br>Cost: ${Math.floor(item.cost)} disasters 
+      <button class="buy-btn" ${currentUser.disasters < item.cost ? 'disabled' : ''} data-id="${item.id}">Buy</button>`;
+      storeList.appendChild(li);
+    });
+  }
+
+  function updateUpgradesMenu() {
+    upgradesList.innerHTML = '';
+    currentUser.upgrades.forEach(upg => {
+      const li = document.createElement('li');
+      li.className = upg.owned ? 'owned' : '';
+      li.innerHTML = `<strong>${upg.name}</strong><br>${upg.desc}<br>
+      Cost: ${upg.cost > 0 ? upg.cost + ' disasters' : 'N/A'}<br>
+      <button class="upgrade-btn" ${ (upg.owned || currentUser.disasters < upg.cost) ? 'disabled' : ''} data-id="${upg.id}">${upg.owned ? 'Owned' : 'Buy'}</button>`;
+      upgradesList.appendChild(li);
+    });
+  }
+
+  function updateChallengesMenu() {
+    challengesList.innerHTML = '';
+    currentUser.challenges.forEach(chal => {
+      const li = document.createElement('li');
+      li.className = chal.completed ? 'completed' : '';
+      let progressText = '';
+      if(chal.id === 'challenge1') {
+        progressText = `${chal.progress} / ${chal.requirement} disasters`;
+      } else if(chal.id === 'challenge2') {
+        progressText = `${Math.floor(chal.progress)} / ${chal.requirement} disasters earned`;
+      } else if(chal.id === 'challenge3') {
+        progressText = `Level ${currentUser.level} / ${chal.requirement}`;
+      }
+      let btnHTML = '';
+      if (chal.claimed) {
+        btnHTML = `<button class="challenge-claim-btn" disabled data-id="${chal.id}">Claimed</button>`;
+      } else {
+        btnHTML = `<button class="challenge-claim-btn" ${chal.completed ? '' : 'disabled'} data-id="${chal.id}">${chal.completed ? 'Claim Reward' : 'Incomplete'}</button>`;
+      }
+      li.innerHTML = `<strong>${chal.name}</strong><br>Progress: ${progressText}<br>
+      Reward: ${chal.reward} disasters<br>
+      ${btnHTML}`;
+      challengesList.appendChild(li);
+    });
+  }
+
+  function calculateBonuses() {
+    currentUser.disastersPerClick = 1;
+    currentUser.disastersPerSecond = 0;
+    currentUser.storePowerUps.forEach(item => {
+      currentUser.disastersPerClick += item.clickBonus * item.owned;
+      currentUser.disastersPerSecond += item.cpsBonus * item.owned;
+    });
+    const clickBoost = currentUser.upgrades.find(u => u.id === 'clickBoost' && u.owned);
+    if(clickBoost) currentUser.disastersPerClick *= 1.5;
+    const cpsBoost = currentUser.upgrades.find(u => u.id === 'cpsBoost' && u.owned);
+    if(cpsBoost) currentUser.disastersPerSecond *= 1.5;
+    const prestigeMultiplier = 1 + currentUser.prestige * 0.1;
+    currentUser.disastersPerClick *= prestigeMultiplier;
+    currentUser.disastersPerSecond *= prestigeMultiplier;
+  }
+
+  function addDisasters(amount) {
+    currentUser.disasters += amount;
+    currentUser.disastersEarnedTotal += amount;
+    updateProgressDisplay();
+    updateStoreMenu();
+    updateUpgradesMenu();
+  }
+
+  function levelUpCheck() {
+    while(currentUser.xp >= currentUser.xpToLevel) {
+      currentUser.xp -= currentUser.xpToLevel;
+      currentUser.level++;
+      currentUser.xpToLevel = Math.floor(1000 * Math.pow(3, currentUser.level - 1));
+    }
+  }
+
+  function handleChallengeProgress() {
+    currentUser.challenges.forEach(chal => {
+      if(chal.completed) return;
+      if(chal.id === 'challenge1') {
+        chal.progress = currentUser.clicksMade;
+      } else if(chal.id === 'challenge2') {
+        chal.progress = currentUser.disastersEarnedTotal;
+      } else if(chal.id === 'challenge3') {
+        chal.progress = currentUser.level;
+      }
+      if(chal.progress >= chal.requirement) {
+        chal.completed = true;
+      }
+    });
+    updateChallengesMenu();
+  }
+
+  function claimChallengeReward(id) {
+    const chal = currentUser.challenges.find(c => c.id === id);
+    if (chal && chal.completed && !chal.claimed) {
+      addDisasters(chal.reward);
+      chal.claimed = true;
+      updateChallengesMenu();
+      updateProgressDisplay();
+      saveCurrentUser();
+      maybeGiveFreeStoreItem();
+    }
+  }
+
+  function maybeGiveFreeStoreItem() {
+    if(Math.random() < 0.25) {
+      const freeItems = currentUser.storePowerUps.filter(i => i.owned >= 0);
+      if(freeItems.length) {
+        const randIndex = Math.floor(Math.random() * freeItems.length);
+        freeItems[randIndex].owned++;
+        showPopup('You received a free <strong>' + freeItems[randIndex].name + '</strong>!', [
+          {label: 'OK', value: 'ok'}
+        ]);
+        calculateBonuses();
+        updateStoreMenu();
+        updateProgressDisplay();
+        saveCurrentUser();
+      }
+    }
+  }
+
+  bigRedButton.addEventListener('click', () => {
+    addDisasters(currentUser.disastersPerClick);
+    currentUser.clicksMade++;
+    currentUser.xp += 0.5;
+    levelUpCheck();
+    handleChallengeProgress();
+    calculateBonuses();
+    saveCurrentUser();
+  });
+
+  setInterval(() => {
+    addDisasters(currentUser.disastersPerSecond);
+    currentUser.xp += currentUser.disastersPerSecond * 0.1;
+    levelUpCheck();
+    handleChallengeProgress();
+    calculateBonuses();
+    saveCurrentUser();
+  }, 1000);
+
+  storeList.addEventListener('click', (e) => {
+    if(e.target.classList.contains('buy-btn')) {
+      const id = e.target.getAttribute('data-id');
+      const item = currentUser.storePowerUps.find(i => i.id === id);
+      if(item && currentUser.disasters >= item.cost) {
+        showPopup(
+          `Buy <strong>${item.name}</strong> for <strong>${Math.floor(item.cost)} disasters</strong>?<br><small>${item.desc}</small>`,
+          [
+            {label: 'Buy', value: 'buy', className: 'buy-btn'},
+            {label: 'Cancel', value: 'cancel'}
+          ],
+          function(val) {
+            if(val === 'buy') {
+              currentUser.disasters -= item.cost;
+              item.owned++;
+              item.cost = Math.floor(item.baseCost * Math.pow(2.15, item.owned));
+              calculateBonuses();
+              updateStoreMenu();
+              updateProgressDisplay();
+              saveCurrentUser();
+            }
+          }
+        );
+      }
+    }
+  });
+
+  upgradesList.addEventListener('click', (e) => {
+    if(e.target.classList.contains('upgrade-btn')) {
+      const id = e.target.getAttribute('data-id');
+      const upg = currentUser.upgrades.find(u => u.id === id);
+      if(upg && !upg.owned && currentUser.disasters >= upg.cost) {
+        showPopup(
+          `Buy upgrade <strong>${upg.name}</strong> for <strong>${upg.cost} disasters</strong>?<br><small>${upg.desc}</small>`,
+          [
+            {label: 'Buy', value: 'buy', className: 'buy-btn'},
+            {label: 'Cancel', value: 'cancel'}
+          ],
+          function(val) {
+            if(val === 'buy') {
+              currentUser.disasters -= upg.cost;
+              upg.owned = true;
+              if(upg.id === 'prestigeBoost') {
+                showPopup('You have prestiged! You can now prestige on level 10.', [
+                  {label: 'OK', value: 'ok'}
+                ]);
+              }
+              calculateBonuses();
+              updateUpgradesMenu();
+              updateProgressDisplay();
+              saveCurrentUser();
+            }
+          }
+        );
+      }
+    }
+  });
+
+  challengesList.addEventListener('click', (e) => {
+    if(e.target.classList.contains('challenge-claim-btn')) {
+      const id = e.target.getAttribute('data-id');
+      claimChallengeReward(id);
+    }
+  });
+
+  menuToggleBtn.addEventListener('click', () => {
+    showMenus = !showMenus;
+    if(showMenus) {
+      storeMenu.classList.add('active');
+      upgradesMenu.classList.add('active');
+      challengesMenu.classList.add('active');
+    } else {
+      storeMenu.classList.remove('active');
+      upgradesMenu.classList.remove('active');
+      challengesMenu.classList.remove('active');
+    }
+  });
+
+  settingsIcon.addEventListener('click', () => {
+    if(showSettings) {
+      const menu = document.getElementById('settingsMenu');
+      if(menu) menu.remove();
+      showSettings = false;
+    } else {
+      showSettings = true;
+      const settingsMenuDiv = document.createElement('div');
+      settingsMenuDiv.id = 'settingsMenu';
+      settingsMenuDiv.innerHTML = `
+        <button id="saveBtn">Save Game</button>
+        <button id="logoutBtn">Logout</button>
+      `;
+      document.body.appendChild(settingsMenuDiv);
+
+      document.getElementById('saveBtn').addEventListener('click', () => {
+        saveCurrentUser();
+        showPopup('Game saved!', [
+          {label: 'OK', value: 'ok'}
+        ]);
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        saveCurrentUser();
+        currentUser = null;
+        gameScreen.style.display = 'none';
+        loginScreen.style.display = 'flex';
+        usernameInput.value = '';
+        passwordInput.value = '';
+        document.getElementById('settingsMenu').remove();
+        showSettings = false;
+      });
+    }
+  });
+
+  loginBtn.addEventListener('click', () => {
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (typeof localStorage === "undefined") {
+      loginMessage.style.color = '#f33';
+      loginMessage.textContent = 'localStorage is not supported or enabled.';
+      return;
+    }
+
+    let users = JSON.parse(localStorage.getItem('disasterClickerUsers') || '{}');
+
+    if(!username || !password) {
+      loginMessage.style.color = '#f33';
+      loginMessage.textContent = 'Please enter username and password.';
+      return;
+    }
+    if(users[username] && users[username].password === password) {
+      loadCurrentUserData(username);
+      loginScreen.style.display = 'none';
+      gameScreen.style.display = 'block';
+      loginMessage.textContent = '';
+      calculateBonuses();
+      updateProgressDisplay();
+      updateStoreMenu();
+      updateUpgradesMenu();
+      updateChallengesMenu();
+      showTransientPopup("DONT PRESS THE BIG RED BUTTON", 2600);
+    } else if (users[username]) {
+      loginMessage.style.color = '#f33';
+      loginMessage.textContent = 'Incorrect password, try again.';
+    } else {
+      loginMessage.style.color = '#f33';
+      loginMessage.textContent = 'User not found. Please create an account.';
+    }
+  });
+
+  createAccountBtn.addEventListener('click', () => {
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if(!username || !password) {
+      loginMessage.style.color = '#f33';
+      loginMessage.textContent = 'Please enter username and password.';
+      return;
+    }
+    let users = JSON.parse(localStorage.getItem('disasterClickerUsers') || '{}');
+
+    if(users[username]) {
+      loginMessage.style.color = '#f33';
+      loginMessage.textContent = 'Username already exists.';
+      return;
+    }
+    users[username] = createNewPlayer(username, password);
+    localStorage.setItem('disasterClickerUsers', JSON.stringify(users));
+    loginMessage.style.color = '#0f0';
+    loginMessage.textContent = 'Account created! You can now log in.';
+  });
+
+  storeMenu.classList.add('active');
+  upgradesMenu.classList.add('active');
+  challengesMenu.classList.add('active');
+
+  const starfield = document.getElementById('starfield');
+  const starsCount = 200;
+  const stars = [];
+
+  function createStar() {
+    return {
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      size: Math.random() * 2 + 1,
+      speed: Math.random() * 0.05 + 0.01
+    };
+  }
+  for(let i=0; i<starsCount; i++) stars.push(createStar());
+
+  function animateStars() {
+    const ctx = starfield.getContext('2d');
+    if(!ctx) return;
+    ctx.clearRect(0, 0, starfield.width, starfield.height);
+    stars.forEach(star => {
+      let col = '#0ff';
+      if (star.size > 2) col = '#fff';
+      else if (star.size > 1.8) col = '#f0f';
+      else if (Math.random() > 0.995) col = '#fae200';
+      ctx.fillStyle = col;
+      star.x -= star.speed;
+      if(star.x < 0) {
+        star.x = window.innerWidth;
+        star.y = Math.random() * window.innerHeight;
+        star.size = Math.random() * 2 + 1;
+        star.speed = Math.random() * 0.05 + 0.01;
+      }
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, 2 * Math.PI);
+      ctx.globalAlpha = 0.7 + Math.random() * 0.3;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+    requestAnimationFrame(animateStars);
+  }
+  starfield.width = window.innerWidth;
+  starfield.height = window.innerHeight;
+  starfield.style.position = 'fixed';
+  starfield.style.top = 0;
+  starfield.style.left = 0;
+  starfield.style.zIndex = -1;
+
+  if(!starfield.getContext) {
+    starfield.innerHTML = '<p>Your browser does not support canvas.</p>';
+  } else {
+    animateStars();
+  }
+
+  window.addEventListener('resize', () => {
+    starfield.width = window.innerWidth;
+    starfield.height = window.innerHeight;
+  });
+
+</script>
+</body>
+</html>

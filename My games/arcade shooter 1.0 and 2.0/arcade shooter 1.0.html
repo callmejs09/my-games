@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arcade Space FPS</title>
+<style>
+  /* Full screen arcade style canvas */
+  body, html {
+    margin: 0; padding: 0; overflow: hidden; background: black;
+    font-family: 'Press Start 2P', cursive;
+    color: #0ff;
+  }
+  #gameCanvas {
+    display: block;
+    background: black;
+    margin: 0 auto;
+    border: 4px solid cyan;
+    image-rendering: pixelated;
+  }
+  #startScreen, #deathScreen, #pauseMenu, #levelUpPopup, #wavePopup {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    border: 3px solid cyan;
+    padding: 20px;
+    text-align: center;
+    font-size: 24px;
+    display: none;
+    color: #0ff;
+  }
+  button {
+    background: #0ff;
+    border: none;
+    color: black;
+    font-weight: bold;
+    font-size: 20px;
+    margin: 10px;
+    cursor: pointer;
+    padding: 10px 20px;
+  }
+  button:hover {
+    background: #08c;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<!-- Start Screen -->
+<div id="startScreen">
+  <h1>Arcade Space FPS</h1>
+  <button id="startBtn">START GAME</button>
+</div>
+
+<!-- Death Screen -->
+<div id="deathScreen">
+  <p>You done died dickhead!</p>
+  <button id="restartBtn">Restart Level</button>
+  <button id="rageQuitBtn">Rage Quit</button>
+</div>
+
+<!-- Pause Menu -->
+<div id="pauseMenu">
+  <h2>Paused</h2>
+  <button id="resumeBtn">Resume</button><br/>
+  <button id="rageQuitPauseBtn">Rage Quit</button>
+</div>
+
+<!-- Level Up Popup -->
+<div id="levelUpPopup">
+  <p>LEVEL UP!</p>
+</div>
+
+<!-- Wave Popup -->
+<div id="wavePopup">
+  <p>Next wave incoming...</p>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  
+  const sounds = {
+    shoot: new Audio('https://actions.google.com/sounds/v1/weapons/laser_gun.ogg'),
+    enemyShoot: new Audio('https://actions.google.com/sounds/v1/weapons/laser_shot_02.ogg'),
+    explosion: new Audio('https://actions.google.com/sounds/v1/explosions/explosion.ogg'),
+    powerUp: new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg'),
+    levelUp: new Audio('https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg'),
+    death: new Audio('https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg'),
+    waveStart: new Audio('https://actions.google.com/sounds/v1/cartoon/boing.ogg'),
+  };
+
+  
+  let gameStarted = false;
+  let gamePaused = false;
+  let player, bullets, enemies, enemyBullets, powerUps;
+  let keys = {};
+  let wave = 1;
+  let level = 1;
+  let enemiesToKill = 3;
+  let enemiesKilled = 0;
+  let autoShoot = false;
+  let autoShootTimer = 0;
+  let lastEnemyShootTime = 0;
+  const enemyShootInterval = 1500; 
+  let lastDamageTime = 0;
+
+  
+  const PLAYER_SIZE = 30;
+  const PLAYER_SPEED = 3;
+  const PLAYER_MAX_HP = 50;
+
+  
+  const ENEMY_SIZE = 25;
+  const ENEMY_SPEED_BASE = 1;
+  const ENEMY_BULLET_SPEED = 4;
+  const ENEMY_DAMAGE = 2;
+  const ENEMY_FIRE_RATE = 1000; 
+
+  
+  const POWERUP_SIZE = 20;
+  const POWERUP_TYPES = ['health', 'autoShoot'];
+  const POWERUP_RESPAWN_TIME = 5000;
+
+  
+  const startScreen = document.getElementById('startScreen');
+  const deathScreen = document.getElementById('deathScreen');
+  const pauseMenu = document.getElementById('pauseMenu');
+  const levelUpPopup = document.getElementById('levelUpPopup');
+  const wavePopup = document.getElementById('wavePopup');
+
+  
+  function resetGame() {
+    player = {
+      x: canvas.width / 2 - PLAYER_SIZE / 2,
+      y: canvas.height / 2 - PLAYER_SIZE / 2,
+      width: PLAYER_SIZE,
+      height: PLAYER_SIZE,
+      speed: PLAYER_SPEED,
+      direction: 'up',
+      vx: 0,
+      vy: -1,
+      hp: PLAYER_MAX_HP,
+    };
+    bullets = [];
+    enemies = [];
+    enemyBullets = [];
+    powerUps = [];
+    wave = 1;
+    level = 1;
+    enemiesKilled = 0;
+    enemiesToKill = 3;
+    autoShoot = false;
+    autoShootTimer = 0;
+    lastEnemyShootTime = 0;
+    lastDamageTime = 0;
+    gamePaused = false;
+  }
+
+  function spawnEnemies(num) {
+    for (let i = 0; i < num; i++) {
+      let spawnX = Math.random() * (canvas.width - ENEMY_SIZE);
+      let spawnY = Math.random() * (canvas.height - ENEMY_SIZE);
+      
+      if (Math.abs(spawnX - player.x) < 100) spawnX += 100;
+      if (Math.abs(spawnY - player.y) < 100) spawnY += 100;
+
+      enemies.push({
+        x: spawnX,
+        y: spawnY,
+        width: ENEMY_SIZE,
+        height: ENEMY_SIZE,
+        speed: ENEMY_SPEED_BASE + level * 0.2,
+        hp: 2,
+        lastShoot: 0,
+      });
+    }
+  }
+
+  function spawnPowerUps() {
+    
+    POWERUP_TYPES.forEach(type => {
+      const count = powerUps.filter(p => p.type === type).length;
+      if (count < 3) {
+        let px = Math.random() * (canvas.width - POWERUP_SIZE);
+        let py = Math.random() * (canvas.height - POWERUP_SIZE);
+        powerUps.push({
+          x: px,
+          y: py,
+          width: POWERUP_SIZE,
+          height: POWERUP_SIZE,
+          type,
+          respawnTimer: 0,
+          collected: false,
+        });
+      }
+    });
+  }
+
+  
+  document.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === 'Escape' && gameStarted) togglePause();
+  });
+  document.addEventListener('keyup', e => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  
+  document.getElementById('startBtn').onclick = () => {
+    startScreen.style.display = 'none';
+    gameStarted = true;
+    resetGame();
+    wavePopup.style.display = 'block';
+    sounds.waveStart.play();
+    setTimeout(() => {
+      wavePopup.style.display = 'none';
+      spawnEnemies(enemiesToKill);
+      spawnPowerUps();
+      gameLoop();
+    }, 1500);
+  };
+
+  document.getElementById('restartBtn').onclick = () => {
+    deathScreen.style.display = 'none';
+    resetGame();
+    spawnEnemies(enemiesToKill);
+    spawnPowerUps();
+    gamePaused = false;
+    gameLoop();
+  };
+  document.getElementById('rageQuitBtn').onclick = () => {
+    window.close();
+  };
+  document.getElementById('rageQuitPauseBtn').onclick = () => {
+    window.close();
+  };
+
+  document.getElementById('resumeBtn').onclick = () => {
+    pauseMenu.style.display = 'none';
+    gamePaused = false;
+    gameLoop();
+  };
+
+  function togglePause() {
+    if (!gameStarted) return;
+    gamePaused = !gamePaused;
+    if (gamePaused) {
+      pauseMenu.style.display = 'block';
+    } else {
+      pauseMenu.style.display = 'none';
+      gameLoop();
+    }
+  }
+
+  function updatePlayerDirection() {
+    if (keys['w']) {
+      player.direction = 'up';
+      player.vx = 0; player.vy = -1;
+    } else if (keys['s']) {
+      player.direction = 'down';
+      player.vx = 0; player.vy = 1;
+    } else if (keys['a']) {
+      player.direction = 'left';
+      player.vx = -1; player.vy = 0;
+    } else if (keys['d']) {
+      player.direction = 'right';
+      player.vx = 1; player.vy = 0;
+    }
+  }
+
+  function movePlayer() {
+    player.x += player.vx * player.speed;
+    player.y += player.vy * player.speed;
+
+    if (player.x < 0) player.x = 0;
+    if (player.y < 0) player.y = 0;
+    if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+    if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+  }
+
+  function drawPlayer() {
+    ctx.save();
+    ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+    if (player.direction === 'up') ctx.rotate(0);
+    else if (player.direction === 'right') ctx.rotate(Math.PI / 2);
+    else if (player.direction === 'down') ctx.rotate(Math.PI);
+    else if (player.direction === 'left') ctx.rotate(-Math.PI / 2);
+
+    ctx.beginPath();
+    ctx.moveTo(0, -player.height / 2);
+    ctx.lineTo(player.width / 2, player.height / 2);
+    ctx.lineTo(-player.width / 2, player.height / 2);
+    ctx.closePath();
+    ctx.fillStyle = 'cyan';
+    ctx.fill();
+    ctx.restore();
+  }
+
+  bullets = [];
+
+  function shootBullet() {
+    let bx = player.x + player.width / 2;
+    let by = player.y + player.height / 2 - player.height / 2; 
+    let vx = player.vx;
+    let vy = player.vy;
+    bullets.push({ x: bx, y: by, vx, vy, size: 6 });
+    sounds.shoot.play();
+  }
+
+  function updateBullets() {
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      bullets[i].x += bullets[i].vx * 7;
+      bullets[i].y += bullets[i].vy * 7;
+      
+      if (bullets[i].x < 0 || bullets[i].x > canvas.width ||
+          bullets[i].y < 0 || bullets[i].y > canvas.height) {
+        bullets.splice(i, 1);
+        continue;
+      }
+      
+      for (let j = enemies.length - 1; j >= 0; j--) {
+        let e = enemies[j];
+        if (bullets[i].x > e.x && bullets[i].x < e.x + e.width &&
+            bullets[i].y > e.y && bullets[i].y < e.y + e.height) {
+          e.hp -= 1;
+          bullets.splice(i, 1);
+          if (e.hp <= 0) {
+            enemies.splice(j, 1);
+            enemiesKilled++;
+            sounds.explosion.play();
+            if (enemiesKilled >= enemiesToKill) nextWaveOrLevel();
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  function drawBullets() {
+    for (let b of bullets) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'yellow';
+      ctx.fill();
+    }
+  }
+
+  
+  enemyBullets = [];
+
+  function enemyShoot(enemy) {
+    let now = Date.now();
+    if (now - enemy.lastShoot < ENEMY_FIRE_RATE) return;
+    enemy.lastShoot = now;
+
+    
+    let dx = (player.x + player.width/2) - (enemy.x + enemy.width/2);
+    let dy = (player.y + player.height/2) - (enemy.y + enemy.height/2);
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    let vx = (dx/dist) * ENEMY_BULLET_SPEED;
+    let vy = (dy/dist) * ENEMY_BULLET_SPEED;
+    enemyBullets.push({
+      x: enemy.x + enemy.width / 2,
+      y: enemy.y + enemy.height / 2,
+      vx,
+      vy,
+      size: 5,
+      damage: ENEMY_DAMAGE,
+    });
+    sounds.enemyShoot.play();
+  }
+
+  function updateEnemyBullets() {
+    for (let i = enemyBullets.length -1; i >= 0; i--) {
+      let b = enemyBullets[i];
+      b.x += b.vx;
+      b.y += b.vy;
+      
+      if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+        enemyBullets.splice(i,1);
+        continue;
+      }
+      
+      let now = Date.now();
+      if (b.x > player.x && b.x < player.x + player.width &&
+          b.y > player.y && b.y < player.y + player.height &&
+          now - lastDamageTime > 500) {
+        player.hp -= b.damage;
+        lastDamageTime = now;
+        enemyBullets.splice(i,1);
+        if (player.hp <= 0) gameOver();
+      }
+    }
+  }
+
+  function drawEnemyBullets() {
+    for (let b of enemyBullets) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    }
+  }
+
+  
+  function moveEnemies() {
+    enemies.forEach((enemy, i) => {
+      
+      let dx = (player.x + player.width/2) - (enemy.x + enemy.width/2);
+      let dy = (player.y + player.height/2) - (enemy.y + enemy.height/2);
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 0) {
+        enemy.x += (dx / dist) * enemy.speed;
+        enemy.y += (dy / dist) * enemy.speed;
+      }
+
+      3
+      enemies.forEach((other, j) => {
+        if (i === j) return;
+        let overlapX = enemy.x < other.x + other.width &&
+                       enemy.x + enemy.width > other.x;
+        let overlapY = enemy.y < other.y + other.height &&
+                       enemy.y + enemy.height > other.y;
+        if (overlapX && overlapY) {
+          
+          let pushX = (enemy.x + enemy.width/2) - (other.x + other.width/2);
+          let pushY = (enemy.y + enemy.height/2) - (other.y + other.height/2);
+          if (pushX !== 0) enemy.x += (pushX > 0 ? 1 : -1);
+          if (pushY !== 0) enemy.y += (pushY > 0 ? 1 : -1);
+        }
+      });
+
+      
+      enemyShoot(enemy);
+    });
+  }
+
+  function drawEnemies() {
+    enemies.forEach(enemy => {
+      ctx.fillStyle = 'magenta';
+      ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+    });
+  }
+
+  
+  function updatePowerUps() {
+    powerUps.forEach((p, idx) => {
+      if (p.collected) {
+        p.respawnTimer += 16;
+        if (p.respawnTimer > POWERUP_RESPAWN_TIME) {
+          p.collected = false;
+          p.respawnTimer = 0;
+        }
+      }
+    });
+  }
+
+  function drawPowerUps() {
+    powerUps.forEach(p => {
+      if (!p.collected) {
+        ctx.fillStyle = p.type === 'health' ? 'lime' : 'orange';
+        ctx.beginPath();
+        ctx.arc(p.x + p.width/2, p.y + p.height/2, p.width/2, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+  }
+
+  function collectPowerUps() {
+    powerUps.forEach(p => {
+      if (!p.collected &&
+          player.x < p.x + p.width &&
+          player.x + player.width > p.x &&
+          player.y < p.y + p.height &&
+          player.y + player.height > p.y) {
+        p.collected = true;
+        if (p.type === 'health') {
+          player.hp += 15;
+          if (player.hp > PLAYER_MAX_HP) player.hp = PLAYER_MAX_HP;
+        } else if (p.type === 'autoShoot') {
+          autoShoot = true;
+          autoShootTimer = 10000; 
+        }
+        sounds.powerUp.play();
+      }
+    });
+  }
+
+  
+  function nextWaveOrLevel() {
+    wave++;
+    enemiesToKill += 2;
+    enemiesKilled = 0;
+    if (wave > 3) {
+      wave = 1;
+      level++;
+      enemiesToKill = 3 + (level - 1) * 2;
+      levelUpPopup.style.display = 'block';
+      sounds.levelUp.play();
+      setTimeout(() => {
+        levelUpPopup.style.display = 'none';
+      }, 1500);
+    }
+    wavePopup.style.display = 'block';
+    sounds.waveStart.play();
+    setTimeout(() => {
+      wavePopup.style.display = 'none';
+      spawnEnemies(enemiesToKill);
+    }, 1500);
+  }
+
+  function gameOver() {
+    sounds.death.play();
+    deathScreen.style.display = 'block';
+    gamePaused = true;
+  }
+
+  
+  function gameLoop() {
+    if (!gameStarted || gamePaused) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    
+    updatePlayerDirection();
+    movePlayer();
+
+    
+    if (autoShoot) {
+      if (autoShootTimer > 0) {
+        autoShootTimer -= 16;
+        if (autoShootTimer <= 0) {
+          autoShoot = false;
+        }
+        if (Math.random() < 0.3) shootBullet();
+      }
+    } else if (keys[' ']) {
+      shootBullet();
+    }
+
+    updateBullets();
+    moveEnemies();
+    updateEnemyBullets();
+    updatePowerUps();
+    collectPowerUps();
+
+    
+    drawPlayer();
+    drawBullets();
+    drawEnemies();
+    drawEnemyBullets();
+    drawPowerUps();
+
+    
+    drawUI();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function drawUI() {
+    ctx.fillStyle = 'cyan';
+    ctx.font = '16px monospace';
+    ctx.fillText(`HP: ${player.hp}`, 10, 20);
+    ctx.fillText(`Level: ${level}`, 10, 40);
+    ctx.fillText(`Wave: ${wave}`, 10, 60);
+  }
+
+ 
+  function saveGame() {
+    if (!gameStarted) return;
+    const saveData = {
+      player,
+      level,
+      wave,
+      enemiesToKill,
+      enemiesKilled,
+      autoShoot,
+      autoShootTimer,
+      powerUps,
+    };
+    localStorage.setItem('arcadeFPSSave', JSON.stringify(saveData));
+  }
+
+  function loadGame() {
+    const saveData = JSON.parse(localStorage.getItem('arcadeFPSSave'));
+    if (!saveData) return false;
+    Object.assign(player, saveData.player);
+    level = saveData.level;
+    wave = saveData.wave;
+    enemiesToKill = saveData.enemiesToKill;
+    enemiesKilled = saveData.enemiesKilled;
+    autoShoot = saveData.autoShoot;
+    autoShootTimer = saveData.autoShootTimer;
+    powerUps = saveData.powerUps;
+    return true;
+  }
+
+  
+  setInterval(saveGame, 5000);
+
+  
+  window.onload = () => {
+    startScreen.style.display = 'block';
+    if (loadGame()) {
+      startScreen.style.display = 'none';
+      gameStarted = true;
+      gamePaused = false;
+      spawnEnemies(enemiesToKill - enemiesKilled);
+      spawnPowerUps();
+      gameLoop();
+    }
+  };
+})();
+</script>
+
+</body>
+</html>
